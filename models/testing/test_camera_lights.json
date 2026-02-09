@@ -1,0 +1,56 @@
+{
+  "blend_file": "/home/kaclark219/Documents/xrlive/Render_Lighting_Dataset/Source/test.blend",
+  "scene_name": "Scene",
+  "render_engine": "BLENDER_EEVEE",
+  "camera": {
+    "name": "Camera",
+    "location_world": [
+      7.358891487121582,
+      -6.925790786743164,
+      5.602138519287109
+    ],
+    "right_world": [
+      0.6859206557273865,
+      0.7276763319969177,
+      0.0
+    ],
+    "up_world": [
+      -0.32401347160339355,
+      0.305420845746994,
+      0.8953956365585327
+    ],
+    "forward_world": [
+      -0.6515582203865051,
+      0.6141703724861145,
+      -0.44527140259742737
+    ],
+    "lens_mm": 50.0,
+    "sensor_width_mm": 36.0,
+    "clip_start": 0.10000000149011612,
+    "clip_end": 100.0
+  },
+  "lights": [
+    {
+      "name": "Light",
+      "light_type": "SPOT",
+      "location_world": [
+        2.6198623180389404,
+        -1.6103503704071045,
+        6.456601619720459
+      ],
+      "direction_world": [
+        -0.5663931965827942,
+        -0.21839119493961334,
+        -0.7946722507476807
+      ],
+      "energy": 1000.0999755859375,
+      "color_rgb": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "spot_size_deg": 74.99999867197056,
+      "spot_blend": 0.15000000596046448
+    }
+  ]
+}
