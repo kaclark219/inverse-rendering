@@ -1,0 +1,14 @@
+{
+  "light_type_to_idx": {
+    "Area Light": 0,
+    "Point Light": 1,
+    "Spot Light": 2,
+    "Tri Lighting": 3
+  },
+  "idx_to_light_type": {
+    "0": "Area Light",
+    "1": "Point Light",
+    "2": "Spot Light",
+    "3": "Tri Lighting"
+  }
+}
