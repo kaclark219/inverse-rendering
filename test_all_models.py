@@ -13,8 +13,8 @@ import random
 MODELS_DIR = "./models"
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
-np.random.seed(42)
-random.seed(42)
+np.random.seed(36)
+random.seed(36)
 
 def load_all_models():
     models = {}
