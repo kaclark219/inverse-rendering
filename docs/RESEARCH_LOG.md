@@ -473,7 +473,6 @@ Structured output per light source and camera-space prediction improved stabilit
 - Inference requires tabular metadata alignment.
 
 ### Next Actions
-- [ ] Build comprehensive evaluation metrics for tri-light angular predictions across dataset.
 - [x] Integrate tri-light model into unified testing framework.
 
 ---
@@ -515,7 +514,6 @@ Structured classification layer successfully segments lighting scenario before r
 - Classification errors will cascade into regression routing.
 
 ### Next Actions
-- [ ] Test classifier routing on diverse lighting scenarios (quality assurance).
 - [x] Save stable model checkpoints.
 - [x] Prepare unified inference script.
 
@@ -552,7 +550,7 @@ The pipeline architecture works conceptually but requires stricter standardizati
 
 ### Next Actions
 - [x] Create documentation for all work completed thus far.
-- [ ] Find/create more data for a more diversified set & generalized results.
+- [x] Find/create more data for a more diversified set & generalized results.
 
 ---
 
@@ -575,5 +573,39 @@ A standard note format should reduce memory-based reporting errors and simplify 
 ### Risks / Caveats
 Backfilling older experiments may be incomplete where metadata was not recorded.
 
+---
+
+## 2026-03-08
+
+### Session Goal
+Create new image dataset with controlled variations in color, power, and spot size for single and double spotlight configurations.
+
+### Changes Made
+- Code/files changed: 
+	- Blender scripts to generate synthetic lighting dataset.
+	- Automated rendering pipeline with randomized light parameters.
+- Data used/generated:
+	- Created inverse_rendering_dataset with 2,313 rendered images total.
+	- Images organized by light count (single/double) and parameter type (base/color/power/spot_size).
+	- Verified `inverse_rendering_dataset/metadata.csv` against `inverse_rendering_dataset/images/` using `check_images.py`.
+- Model/config used: 
+	- Icosphere with Shiny Metal PBR material.
+	- CYCLES render engine, AgX view transform.
+	- Fixed camera position with 50mm focal length.
+
+### Results
+- Quantitative metrics:
+	- **Total images rendered**: 2,313 PNG files
+	  - Single light: 840 images (base: 120, color: 273, power: 360, spot_size: 360)
+	  - Double light: 840 images (base: 120, color: 360, power: 360, spot_size: 360)
+	- **CSV entries**: 2,313 rows
+	  - Single light: 1,113 entries
+	  - Double light: 1,200 entries
+- Qualitative observations:
+	- Dataset integrity check passed for the current snapshot.
+
+### Interpretation
+The dataset is currently in a consistent, train-ready state for experiments that require strict one-to-one metadata/image mapping.
+
 ### Next Actions
-- [ ] 
+- [ ] Use new data to finetune models.
