@@ -608,4 +608,52 @@ Create new image dataset with controlled variations in color, power, and spot si
 The dataset is currently in a consistent, train-ready state for experiments that require strict one-to-one metadata/image mapping.
 
 ### Next Actions
-- [ ] Use new data to finetune models.
+- [x] Combine all data to one common location.
+
+---
+
+## 2026-03-10
+
+### Session Goal
+Merge three independent CSV datasets (render-lighting, spotlight-sphere-data, inverse_rendering_dataset) into a unified master for cross-dataset experiment capability.
+
+### Changes Made
+- Code/files changed:
+	- Created merge script to align three datasets with different schemas.
+	- Applied safe field mapping for spotlight-sphere-data → shared lighting schema.
+- Data used/generated:
+	- Source: `processing/master_with_paths.csv` (render-lighting, 31,824 rows)
+	- Source: `processing/color_power_labels.csv` (spotlight-sphere-data, 1,000 rows)
+	- Source: `data/inverse_rendering_dataset/metadata.csv` (inverse_rendering_dataset, 2,313 rows)
+	- Output: `data/data_master.csv` (unified, 35,137 rows)
+- Model/config used: None (data curation only).
+
+### Results
+- Quantitative metrics:
+	- **Total rows merged**: 35,137 (31,824 + 1,000 + 2,313 = 35,137 ✓)
+	- **Total columns in merged file**: 107 (union of all source columns + 3 audit columns)
+	- **Data loss**: 0 non-empty cells lost across all sources
+	- **Row count deltas**: 0 for each source
+	- **Column presence**: 100% of source columns retained in merged file
+- Field mapping (spotlight-sphere-data):
+	- `spot_name → light0_name`: 1,000/1,000 perfect matches
+	- `spot_energy → light0_energy`: 1,000/1,000 perfect matches
+	- `spot_color_r/g/b → light0_color_r/g/b`: 1,000/1,000 perfect matches
+	- `spot_loc_x/y/z → light0_pos_x/y/z`: 1,000/1,000 perfect matches
+	- `light0_type = SPOT`: 1,000/1,000 rows
+	- `num_active_lights = 1`: 1,000/1,000 rows
+- Qualitative observations:
+	- Merge used safe strategy: only populated empty target fields, never overwrote existing values.
+	- Zero conflicts during mapping.
+	- Source file paths normalized into `resolved_image_relpath` for consistent future lookup.
+	- New `dataset_source` column enables per-source analysis and filtering downstream.
+
+### Interpretation
+All three datasets now coexist in a single queryable file without information loss. Cross-dataset experiments (e.g. comparing render-lighting and spotlight-sphere-data models) are now feasible. The audit confirms structural integrity and mapping completeness.
+
+### Risks / Caveats
+- Data from different sources has different image quality, resolution, and material/lighting assumptions; models trained on this combined file must account for source-specific biases.
+- Spotlight-sphere-data was mapped from its native schema into shared lighting fields; users should verify mappings match their domain understanding.
+
+### Next Actions
+- [ ] Train &/or finetune models using combined data.
