@@ -657,3 +657,37 @@ All three datasets now coexist in a single queryable file without information lo
 
 ### Next Actions
 - [ ] Train &/or finetune models using combined data.
+
+---
+
+## 2026-03-13
+
+### Session Goal
+Redo `light_classifiers` training using the full merged dataset and remove redundant filtering logic that could cause duplicate-check warnings.
+
+### Changes Made
+- Code/files changed:
+	- Updated `models/light_classifiers.ipynb` data-filtering logic.
+	- Removed redundant material gate for render-lighting rows when batch membership already implies PlasticGlossy.
+	- Simplified training-row inclusion to avoid double-checking the same source criteria.
+- Data used/generated:
+	- Input source: `data/data_master.csv` (combined master dataset).
+	- Included training rows from:
+		- render-lighting entries whose `batch_folder` is in the PlasticGlossy batch list.
+		- inverse_rendering_dataset entries via `dataset_source`.
+- Model/config used:
+	- Light-count classifier and light-type classifier pipeline in `light_classifiers.ipynb`.
+	- Existing CNN architecture/training callbacks retained; focus was on data selection correctness.
+
+### Results
+- Quantitative metrics: Pending fresh retrain/evaluation after filter update.
+- Qualitative observations:
+	- Filtering logic is now single-pass and no longer checks overlapping conditions for the same render-lighting subset.
+	- Expected behavior is cleaner dataset selection with no duplicate warning triggered by redundant criteria checks.
+
+### Interpretation
+The classifier pipeline now aligns better with the merged-dataset design: one canonical source (`data_master.csv`) with non-duplicative inclusion rules. This reduces label-selection ambiguity before retraining.
+
+### Risks / Caveats
+- Removing redundant checks assumes PlasticGlossy batches are authoritative and consistently named.
+- If batch naming changes in future exports, filter coverage should be revalidated.
