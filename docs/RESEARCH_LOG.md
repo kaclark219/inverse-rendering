@@ -656,7 +656,7 @@ All three datasets now coexist in a single queryable file without information lo
 - Spotlight-sphere-data was mapped from its native schema into shared lighting fields; users should verify mappings match their domain understanding.
 
 ### Next Actions
-- [ ] Train &/or finetune models using combined data.
+- [x] Train &/or finetune models using combined data.
 
 ---
 
@@ -691,3 +691,53 @@ The classifier pipeline now aligns better with the merged-dataset design: one ca
 ### Risks / Caveats
 - Removing redundant checks assumes PlasticGlossy batches are authoritative and consistently named.
 - If batch naming changes in future exports, filter coverage should be revalidated.
+
+---
+
+## 2026-03-15
+
+### Session Goal
+Finetune `angular_predictor` and `color_power_predictor` on `inverse_rendering_dataset`, diagnose high error, and align the pipeline to match original model training behavior.
+
+### Changes Made
+- Code/files changed:
+	- Updated `models/finetune_angle+color.ipynb` end-to-end.
+	- Added robust preprocessing for camera-space targets (`light0_pos_cam_*`, `light0_dir_cam_*`).
+	- Fixed angular tabular feature mismatch by reconstructing the exact legacy 31-feature layout expected by `angular_predictor.keras`.
+	- Added training-curve visualization and compact diagnostics cells (per-dimension MAE, baseline comparison, denormalized color/energy metrics).
+	- Reworked finetuning hyperparameters to match original training recipes (optimizer/loss/epochs/callbacks and train-split normalization strategy).
+- Data used/generated:
+	- Input metadata: `data/inverse_rendering_dataset/metadata.csv`.
+	- Legacy schema alignment references: `processing/master_with_paths.csv`, `processing/color_power_labels.csv`.
+	- Filtered training subset: single-light SPOT rows from inverse dataset.
+- Model/config used:
+	- Start from pretrained checkpoints: `models/angular_predictor.keras`, `models/color_power_predictor.keras`.
+	- Saved outputs: `models/angular_predictor_finetuned.keras`, `models/color_power_predictor_finetuned.keras`.
+
+### Results
+- Quantitative metrics:
+	- Angular:
+		- Test loss: `1.5164`
+		- Test MAE: `0.8009`
+		- Per-dim MAE: `[2.1643, 0.7168, 0.9405, 0.5439, 0.1798, 0.2603]`
+		- Baseline per-dim MAE: `[2.2071, 1.5948, 2.0513, 0.5518, 0.3987, 0.5128]`
+		- Model improved over baseline on all six outputs.
+	- Color/Power:
+		- Eval vector: `[0.6014, 0.3047, 0.3823, 0.3117, 0.4079]`
+		- Color absolute MAE (0-1 scale): `[0.0690, 0.0684, 0.0803]`
+		- Energy log-MAE: `0.1945`
+		- Energy MAE (linear): `830.45`
+		- Energy MAPE: `19.52%`
+- Qualitative observations:
+	- Initial high error was caused by schema/normalization mismatch and inconsistent preprocessing relative to original model training.
+	- After restoring original-style preprocessing/training, both models converged stably and produced substantially better results.
+
+### Interpretation
+The major failure mode was pipeline mismatch rather than pure model incapacity. Matching the original feature layout, coordinate-space targets, and normalization/training recipes was critical for transfer learning on the new dataset.
+
+### Risks / Caveats
+- Domain shift between legacy data and inverse dataset remains (especially for angular position ranges), so absolute error may still be bounded by dataset differences.
+- Energy errors should be interpreted with scale-aware metrics (log-MAE, MAPE), not linear MAE alone.
+
+### Next Actions
+- [ ] Add a repeatable evaluation notebook section that logs baseline-vs-finetuned metrics to CSV for reporting.
