@@ -740,4 +740,57 @@ The major failure mode was pipeline mismatch rather than pure model incapacity. 
 - Energy errors should be interpreted with scale-aware metrics (log-MAE, MAPE), not linear MAE alone.
 
 ### Next Actions
-- [ ] Add a repeatable evaluation notebook section that logs baseline-vs-finetuned metrics to CSV for reporting.
+- [x] Spotlight size predictor model using new data.
+- [x] Create test files for all models.
+
+---
+
+## 2026-03-16
+
+### Session Goal
+Implement a dedicated spot-size predictor using `inverse_rendering_dataset` and upgrade the unified test harness to run all current models with visual actual-vs-predicted reporting.
+
+### Changes Made
+- Code/files changed:
+	- Created `models/spot_size_predictor.ipynb` using the same template style as other predictor notebooks.
+	- Added single-light SPOT + `batch_folder` spot-size filtering and trained regression target `light0_spot_cone_deg`.
+	- Updated `testing/test_all_models.py` to load all model families and prefer finetuned checkpoints when available.
+	- Added per-model inference paths for:
+		- `light_count_detector`
+		- `light_type_classifier`
+		- `angular_predictor` (finetuned preferred)
+		- `color_power_predictor` (finetuned preferred)
+		- `tri_angular_predictor`
+		- `spot_size_predictor`
+	- Added report image generation (`testing/test_result.png`) with tested image panels and actual vs predicted values/metrics overlaid.
+	- Fixed tri-angular test cardinality bug by forcing single-row metadata selection when duplicate `image_relpath` matches occur.
+	- Switched test image selection to random sampling each run.
+- Data used/generated:
+	- `data/inverse_rendering_dataset/metadata.csv` for spot-size predictor training/eval.
+	- `data/data_master.csv` + `processing/master_with_paths.csv` for cross-model test row selection and tabular feature reconstruction.
+	- Output artifact: `testing/test_result.png`.
+- Model/config used:
+	- Finetuned preference logic:
+		- `angular_predictor_finetuned.keras` over `angular_predictor.keras`
+		- `color_power_predictor_finetuned.keras` over `color_power_predictor.keras`
+	- Base checkpoints used where no finetuned variant exists.
+
+### Results
+- Quantitative metrics:
+	- Spot-size training/eval pipeline now logs MAE/RMSE in degrees in notebook output.
+	- Unified test script now executes inference across all available models in one run (after tri cardinality fix).
+- Qualitative observations:
+	- Multi-model test output is now consolidated into one visual report image.
+	- Actual vs predicted values are visible directly on the figure for quick qualitative inspection.
+	- Randomized image selection improves test coverage across runs.
+
+### Interpretation
+The project now has complete model-family smoke testing with interpretable visual outputs, and a dedicated spot-size regressor aligned with the newer inverse dataset.
+
+### Risks / Caveats
+- Different model families still rely on different preprocessing and dataset contexts; unified orchestration works, but the underlying pipelines remain heterogeneous.
+- Duplicate metadata rows by `image_relpath` can still occur in merged sources; explicit single-row selection is required during inference.
+
+### Next Actions
+- [ ] Add CLI flags to pin exact test images (while keeping random-by-default behavior).
+- [ ] Optionally export per-model numeric results to CSV/JSON alongside `testing/test_result.png`.

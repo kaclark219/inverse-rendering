@@ -285,3 +285,49 @@ Unresolved
 ### Follow-up
 - [ ] Define and version a shared feature contract for inference-time metadata.
 - [ ] Extend test harness to construct metadata tensors for angular models.
+
+---
+
+## 2026-03-16 — Blocker + Decision
+
+### Blocker
+Difficulty creating high-quality Blender materials that produced consistent, realistic render behavior for training data.
+
+### Symptoms
+- Repeated dissatisfaction with material quality/consistency during scene setup.
+- Material iteration was slowing dataset and experiment progress.
+- Asked peers for help with material setup, but did not get a volunteer to assist.
+
+### Suspected Root Cause
+- Personal experience with Blender is very limited.
+
+### Attempts Tried
+1. Manual material tweaking and repeated visual checks in Blender.
+2. Reached out for help/collaboration on material setup.
+
+### Outcome
+Partially resolved
+
+### Decision
+Use BlenderKit materials as the primary source for scene materials going forward.
+
+### Context
+Progress on model/data work was being blocked by material quality issues and lack of immediate support for custom material development.
+
+### Alternatives Considered
+1. Continue building fully custom materials from scratch.
+2. Pause data generation until a collaborator could help with material work.
+
+### Rationale
+BlenderKit provides production-ready materials quickly, reducing iteration time and unblocking dataset generation/training workflows.
+
+### Expected Tradeoffs
+- Pros: Faster setup, better baseline realism, less time spent on shader engineering.
+- Cons: Less full control over material internals; potential licensing/style consistency considerations across assets.
+
+### Validation Plan
+Compare a small controlled set of renders before/after BlenderKit adoption for consistency, realism, and downstream model stability.
+
+### Follow-up
+- [ ] Record which BlenderKit materials were used per dataset batch.
+- [ ] Verify material licensing/attribution requirements for thesis/publication use.
