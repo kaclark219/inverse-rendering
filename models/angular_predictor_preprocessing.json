@@ -1,0 +1,101 @@
+{
+  "image_size": [
+    224,
+    224
+  ],
+  "feature_names": [
+    "num_active_lights",
+    "cam_pos_x",
+    "cam_pos_y",
+    "cam_pos_z",
+    "light0_energy",
+    "light0_color_r",
+    "light0_color_g",
+    "light0_color_b",
+    "light0_spot_cone_deg",
+    "light_type_label_SPOT"
+  ],
+  "feature_means": [
+    1.0,
+    1.537503719329834,
+    -1.6263011693954468,
+    2.893777847290039,
+    946.744140625,
+    0.9757614135742188,
+    0.9767508506774902,
+    0.9738233089447021,
+    54.73599624633789,
+    1.0
+  ],
+  "feature_stds": [
+    1.0,
+    3.557553768157959,
+    3.3141567707061768,
+    1.5388542413711548,
+    1934.1490478515625,
+    0.11417514830827713,
+    0.11115545779466629,
+    0.12083202600479126,
+    10.79866886138916,
+    1.0
+  ],
+  "target_names": [
+    "light0_pos_cam_x",
+    "light0_pos_cam_y",
+    "light0_pos_cam_z",
+    "light0_dir_cam_x",
+    "light0_dir_cam_y",
+    "light0_dir_cam_z"
+  ],
+  "target_means": [
+    -0.10490306466817856,
+    1.9068011045455933,
+    -4.10372257232666,
+    0.022088460624217987,
+    -0.5161531567573547,
+    -0.2716502845287323
+  ],
+  "target_stds": [
+    1.7882835865020752,
+    1.5271575450897217,
+    3.9894306659698486,
+    0.47972196340560913,
+    0.41863754391670227,
+    0.5038842558860779
+  ],
+  "train_size": 5421,
+  "val_size": 678,
+  "test_size": 678,
+  "data_rows": 6777,
+  "filters": {
+    "resolved_on_disk": true,
+    "num_active_lights": 1,
+    "required_columns": [
+      "num_active_lights",
+      "light0_type",
+      "cam_pos_x",
+      "cam_pos_y",
+      "cam_pos_z",
+      "cam_right_x",
+      "cam_right_y",
+      "cam_right_z",
+      "cam_up_x",
+      "cam_up_y",
+      "cam_up_z",
+      "cam_forward_x",
+      "cam_forward_y",
+      "cam_forward_z",
+      "light0_energy",
+      "light0_color_r",
+      "light0_color_g",
+      "light0_color_b",
+      "light0_spot_cone_deg",
+      "light0_pos_x",
+      "light0_pos_y",
+      "light0_pos_z",
+      "light0_dir_x",
+      "light0_dir_y",
+      "light0_dir_z"
+    ]
+  }
+}

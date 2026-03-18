@@ -792,5 +792,75 @@ The project now has complete model-family smoke testing with interpretable visua
 - Duplicate metadata rows by `image_relpath` can still occur in merged sources; explicit single-row selection is required during inference.
 
 ### Next Actions
-- [ ] Add CLI flags to pin exact test images (while keeping random-by-default behavior).
-- [ ] Optionally export per-model numeric results to CSV/JSON alongside `testing/test_result.png`.
+- [x] Fix angular model inputs.
+- [x] Make testing actually work as a pipeline system.
+
+---
+
+## 2026-03-17
+
+### Session Goal
+Fix `angular_predictor` inference so the model receives the right tabular inputs and can be used reliably in the current workflow.
+
+### Changes Made
+- Code/files changed:
+	- Reworked angular inference/preprocessing alignment around the expected feature layout.
+	- Corrected the `angular_predictor` input handling so the tabular branch matches model expectations.
+	- Cleaned up the single-light SPOT inference path to use the repaired angular setup consistently.
+- Data used/generated:
+	- Existing metadata context from `data/inverse_rendering_dataset/metadata.csv`.
+	- Legacy alignment references from `processing/master_with_paths.csv`.
+- Model/config used:
+	- `models/angular_predictor_finetuned.keras` when available, otherwise `models/angular_predictor.keras`.
+
+### Results
+- Qualitative observations:
+	- Angular inference no longer fails because of the earlier feature-layout mismatch.
+	- The model can now be routed again as part of the broader inverse-rendering workflow.
+
+### Interpretation
+The main blocker for angular prediction was input-schema mismatch rather than the model weights themselves. Restoring the expected feature structure brought the predictor back into a usable state.
+
+### Risks / Caveats
+- The angular model still depends on tabular context, so pipeline integration must supply those values consistently at inference time.
+
+### Next Actions
+- [x] Repair angular predictor input path.
+
+---
+
+## 2026-03-18
+
+### Session Goal
+Update `pipeline.py` so the pipeline can run from a photo using outputs from the other models, and make the testing path behave like the intended end-to-end system.
+
+### Changes Made
+- Code/files changed:
+	- Updated `pipeline.py` so single-light SPOT angular inference no longer requires a matching metadata row for the input image.
+	- Added synthetic angular tabular-input construction using stable context defaults plus upstream predictions from:
+		- `light_count_detector`
+		- `light_type_classifier`
+		- `color_power_predictor`
+		- `spot_size_predictor`
+	- Routed the single-photo pipeline through the repaired angular branch using the inferred light properties.
+- Data used/generated:
+	- Existing context statistics from the model-building helpers in `testing/test_all_models.py`.
+	- No new dataset artifacts generated; this was an inference-pipeline integration change.
+- Model/config used:
+	- Pipeline model loading still prefers finetuned checkpoints where present.
+
+### Results
+- Qualitative observations:
+	- The single-light SPOT pipeline can now run conceptually from just the photo plus the information predicted by the upstream models.
+	- Angular inference is no longer coupled to image-path lookup in the metadata table for that branch.
+	- `pipeline.py` passes syntax validation after the update.
+
+### Interpretation
+This closes the main gap between individual-model testing and actual pipeline-style inference for the single-light SPOT case. The system now behaves more like a real photo-to-parameters pipeline instead of a dataset-row replay.
+
+### Risks / Caveats
+- Tri-light angular inference still relies on metadata lookup and is not yet photo-only.
+- Some angular tabular fields still use context defaults because they are not directly predicted from the image.
+
+### Next Actions
+- [ ] Do extensive testing for results.
