@@ -8,6 +8,8 @@ import pandas as pd
 
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/mpl")
 os.environ.setdefault("XDG_CACHE_HOME", "/tmp")
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 
 from testing.test_all_models import (
     MODELS_DIR,
@@ -22,6 +24,65 @@ from testing.test_all_models import (
 np.random.seed(42)
 
 PROJECT_ROOT = Path(__file__).resolve().parent
+
+
+def build_prediction_csv_row(results: dict) -> dict:
+    predictions = results.get("predictions", {})
+    skipped = results.get("skipped", {})
+
+    row = {
+        "image_path": results.get("image_path", ""),
+        "pred_light_count": None,
+        "pred_light_count_confidence": None,
+        "pred_light_type": None,
+        "pred_light_type_confidence": None,
+        "pred_color_r": None,
+        "pred_color_g": None,
+        "pred_color_b": None,
+        "pred_energy": None,
+        "pred_spot_cone_deg": None,
+        "pred_light0_position_cam": None,
+        "pred_light0_direction_cam": None,
+        "pred_tri_lights": None,
+        "skipped_color_power_predictor": skipped.get("color_power_predictor", ""),
+        "skipped_spot_size_predictor": skipped.get("spot_size_predictor", ""),
+        "skipped_angular_predictor": skipped.get("angular_predictor", ""),
+        "skipped_tri_angular_predictor": skipped.get("tri_angular_predictor", ""),
+    }
+
+    count = predictions.get("light_count_detector")
+    if count:
+        row["pred_light_count"] = count.get("light_count")
+        row["pred_light_count_confidence"] = count.get("confidence")
+
+    light_type = predictions.get("light_type_classifier")
+    if light_type:
+        row["pred_light_type"] = light_type.get("light_type")
+        row["pred_light_type_confidence"] = light_type.get("confidence")
+
+    color_power = predictions.get("color_power_predictor")
+    if color_power:
+        rgb = color_power.get("predicted_color_rgb", [])
+        if len(rgb) == 3:
+            row["pred_color_r"] = rgb[0]
+            row["pred_color_g"] = rgb[1]
+            row["pred_color_b"] = rgb[2]
+        row["pred_energy"] = color_power.get("predicted_energy")
+
+    spot_size = predictions.get("spot_size_predictor")
+    if spot_size:
+        row["pred_spot_cone_deg"] = spot_size.get("predicted_spot_cone_deg")
+
+    angular = predictions.get("angular_predictor")
+    if angular:
+        row["pred_light0_position_cam"] = json.dumps(angular.get("predicted_position_cam", []))
+        row["pred_light0_direction_cam"] = json.dumps(angular.get("predicted_direction_cam", []))
+
+    tri = predictions.get("tri_angular_predictor")
+    if tri:
+        row["pred_tri_lights"] = json.dumps(tri.get("lights", []))
+
+    return row
 
 
 def load_pipeline_models() -> dict:
@@ -224,15 +285,55 @@ def run_spot_size_predictor(model, ctx: dict, image_path: Path) -> dict:
     return {"predicted_spot_cone_deg": pred_deg}
 
 
-def route_predictors(image_path: Path) -> dict:
-    if not image_path.exists():
-        raise FileNotFoundError(f"Image not found: {image_path}")
-
+def initialize_pipeline_runtime() -> dict:
     models = load_pipeline_models()
     if "light_count_detector" not in models or "light_type_classifier" not in models:
         raise ValueError("Both light_count_detector and light_type_classifier are required.")
 
-    type_mapping = load_light_type_mapping()
+    runtime = {
+        "models": models,
+        "type_mapping": load_light_type_mapping(),
+        "contexts": {},
+        "context_errors": {},
+    }
+
+    if "color_power_predictor" in models:
+        try:
+            color_source = models["color_power_predictor"]["source"]
+            runtime["contexts"]["color_power_predictor"] = build_color_context(color_source)
+        except Exception as e:
+            runtime["context_errors"]["color_power_predictor"] = str(e)
+
+    if "spot_size_predictor" in models:
+        try:
+            runtime["contexts"]["spot_size_predictor"] = build_spot_context()
+        except Exception as e:
+            runtime["context_errors"]["spot_size_predictor"] = str(e)
+
+    if "angular_predictor" in models:
+        try:
+            runtime["contexts"]["angular_predictor"] = build_angular_context(models["angular_predictor"]["model"])
+        except Exception as e:
+            runtime["context_errors"]["angular_predictor"] = str(e)
+
+    if "tri_angular_predictor" in models:
+        try:
+            runtime["contexts"]["tri_angular_predictor"] = build_tri_context(models["tri_angular_predictor"]["model"])
+        except Exception as e:
+            runtime["context_errors"]["tri_angular_predictor"] = str(e)
+
+    return runtime
+
+
+def route_predictors(image_path: Path, runtime: dict) -> dict:
+    if not image_path.exists():
+        raise FileNotFoundError(f"Image not found: {image_path}")
+
+    models = runtime["models"]
+    type_mapping = runtime["type_mapping"]
+    contexts = runtime["contexts"]
+    context_errors = runtime["context_errors"]
+
     results = {
         "image_path": str(image_path.resolve()),
         "predictions": {},
@@ -248,44 +349,53 @@ def route_predictors(image_path: Path) -> dict:
     results["predictions"]["light_type_classifier"] = type_result
 
     if predicted_type == "SPOT LIGHT":
-        if "color_power_predictor" in models:
+        if "color_power_predictor" in models and "color_power_predictor" in contexts:
             color_source = models["color_power_predictor"]["source"]
-            color_ctx = build_color_context(color_source)
+            color_ctx = contexts["color_power_predictor"]
             results["predictions"]["color_power_predictor"] = run_color_power_predictor(
                 models["color_power_predictor"]["model"],
                 color_source,
                 color_ctx,
                 image_path,
             )
+        elif "color_power_predictor" in context_errors:
+            results["skipped"]["color_power_predictor"] = f"Context/model setup failed: {context_errors['color_power_predictor']}"
         else:
             results["skipped"]["color_power_predictor"] = "Model not found."
     else:
         results["skipped"]["color_power_predictor"] = f"Predicted type {predicted_type} is not routed to color_power_predictor."
 
     if predicted_type == "SPOT LIGHT":
-        if "spot_size_predictor" in models:
-            spot_ctx = build_spot_context()
+        if "spot_size_predictor" in models and "spot_size_predictor" in contexts:
+            spot_ctx = contexts["spot_size_predictor"]
             results["predictions"]["spot_size_predictor"] = run_spot_size_predictor(
                 models["spot_size_predictor"]["model"],
                 spot_ctx,
                 image_path,
             )
+        elif "spot_size_predictor" in context_errors:
+            results["skipped"]["spot_size_predictor"] = f"Context/model setup failed: {context_errors['spot_size_predictor']}"
         else:
             results["skipped"]["spot_size_predictor"] = "Model not found."
     else:
         results["skipped"]["spot_size_predictor"] = f"Predicted type {predicted_type} is not routed to spot_size_predictor."
 
     if predicted_type == "SPOT LIGHT" and predicted_count == 1:
-        if "angular_predictor" in models:
-            ang_ctx = build_angular_context(models["angular_predictor"]["model"])
-            angular_result = run_angular_predictor(
-                models["angular_predictor"]["model"],
-                ang_ctx,
-                image_path,
-                build_single_light_angular_overrides(results),
-            )
-            target = "predictions" if "skipped" not in angular_result else "skipped"
-            results[target]["angular_predictor"] = angular_result if target == "predictions" else angular_result["skipped"]
+        if "angular_predictor" in models and "angular_predictor" in contexts:
+            try:
+                ang_ctx = contexts["angular_predictor"]
+                angular_result = run_angular_predictor(
+                    models["angular_predictor"]["model"],
+                    ang_ctx,
+                    image_path,
+                    build_single_light_angular_overrides(results),
+                )
+                target = "predictions" if "skipped" not in angular_result else "skipped"
+                results[target]["angular_predictor"] = angular_result if target == "predictions" else angular_result["skipped"]
+            except Exception as e:
+                results["skipped"]["angular_predictor"] = f"Error while preparing/running angular_predictor: {e}"
+        elif "angular_predictor" in context_errors:
+            results["skipped"]["angular_predictor"] = f"Context/model setup failed: {context_errors['angular_predictor']}"
         else:
             results["skipped"]["angular_predictor"] = "Model not found."
     else:
@@ -294,11 +404,16 @@ def route_predictors(image_path: Path) -> dict:
         )
 
     if predicted_type == "TRI LIGHTING" and predicted_count == 3:
-        if "tri_angular_predictor" in models:
-            tri_ctx = build_tri_context(models["tri_angular_predictor"]["model"])
-            tri_result = run_tri_angular_predictor(models["tri_angular_predictor"]["model"], tri_ctx, image_path)
-            target = "predictions" if "skipped" not in tri_result else "skipped"
-            results[target]["tri_angular_predictor"] = tri_result if target == "predictions" else tri_result["skipped"]
+        if "tri_angular_predictor" in models and "tri_angular_predictor" in contexts:
+            try:
+                tri_ctx = contexts["tri_angular_predictor"]
+                tri_result = run_tri_angular_predictor(models["tri_angular_predictor"]["model"], tri_ctx, image_path)
+                target = "predictions" if "skipped" not in tri_result else "skipped"
+                results[target]["tri_angular_predictor"] = tri_result if target == "predictions" else tri_result["skipped"]
+            except Exception as e:
+                results["skipped"]["tri_angular_predictor"] = f"Error while preparing/running tri_angular_predictor: {e}"
+        elif "tri_angular_predictor" in context_errors:
+            results["skipped"]["tri_angular_predictor"] = f"Context/model setup failed: {context_errors['tri_angular_predictor']}"
         else:
             results["skipped"]["tri_angular_predictor"] = "Model not found."
     else:
@@ -358,13 +473,16 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    args = parse_args()
-    results = route_predictors(args.image)
+    runtime = initialize_pipeline_runtime()
+    rows = []
 
-    if args.json:
-        print(json.dumps(results, indent=2))
-    else:
-        print_summary(results)
+    for img_path in PROJECT_ROOT.glob("test_data/images/*"):
+        results = route_predictors(img_path, runtime)
+        rows.append(build_prediction_csv_row(results))
+
+    out_csv = PROJECT_ROOT / "test_predictions.csv"
+    pd.DataFrame(rows).to_csv(out_csv, index=False)
+    print(f"Saved predictions CSV: {out_csv}")
 
 
 if __name__ == "__main__":
