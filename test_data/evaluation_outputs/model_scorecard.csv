@@ -1,6 +1,8 @@
 model,score,coverage_pct
 light_type_classifier,100.0,100.0
-light_count_detector,84.88,100.0
-color_power_predictor,76.19975938683464,28.000000000000004
-spot_size_predictor,81.58190028508801,28.000000000000004
-energy_head,70.74561039097567,28.000000000000004
+light_count_detector,99.71999999999998,100.0
+color_power_predictor,85.9974565843741,100.0
+spot_size_predictor,80.40755522071571,100.0
+energy_head,79.45668852691492,100.0
+position_predictor,73.05675739955608,99.6
+direction_predictor,75.76658598442496,99.6

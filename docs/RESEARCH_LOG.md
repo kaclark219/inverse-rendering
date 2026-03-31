@@ -864,3 +864,130 @@ This closes the main gap between individual-model testing and actual pipeline-st
 
 ### Next Actions
 - [ ] Do extensive testing for results.
+
+---
+
+## 2026-03-22
+
+### Session Goal
+Build a packaged test set with matching metadata and add a formal evaluation pass so pipeline behavior can be measured across models instead of only eyeballed.
+
+### Changes Made
+- Code/files changed:
+	- Expanded `pipeline.py` into a batch-style testing workflow that writes a predictions CSV for the packaged test set.
+	- Created `test_data/evaluation.py` to compare predictions against actual metadata and compute metrics across the available model outputs.
+	- Added evaluation outputs under `test_data/evaluation_outputs/`, including charts, KPI summaries, and tabular scorecards.
+	- Added the first packaged prediction/evaluation tables:
+		- `test_data/test_predictions.csv`
+		- `test_data/evaluation_outputs/evaluation_table.csv`
+		- `test_data/evaluation_outputs/metrics_summary.json`
+		- `test_data/evaluation_outputs/model_scorecard.csv`
+	- Added a packaged benchmark image set in `test_data/images/`.
+	- Added `test_data/test_metadata.csv` as the paired ground-truth metadata file for those images.
+- Data used/generated:
+	- Generated packaged benchmark images: `test_data/images/render_0000.png` through `render_0499.png`.
+	- Generated evaluation metadata: `test_data/test_metadata.csv`.
+	- Generated first-pass evaluation artifacts in `test_data/evaluation_outputs/`.
+- Model/config used:
+	- Batch testing used the current pipeline model/routing stack in `pipeline.py`.
+
+### Results
+- Quantitative metrics:
+	- A 500-image packaged benchmark set was added, along with CSV-based prediction/evaluation outputs.
+- Qualitative observations:
+	- The project moved from ad hoc spot-checking to a reusable benchmark/evaluation workflow.
+	- Pipeline behavior could now be tracked in one place across model families.
+
+### Interpretation
+This session established the testing/evaluation infrastructure that later made it possible to diagnose notebook-vs-pipeline mismatches more clearly.
+
+### Risks / Caveats
+- The packaged test workflow depends on `test_data/images` and `test_data/test_metadata.csv` staying synchronized.
+- Metric quality is constrained by the routing logic and scoring rules used by the pipeline at the time.
+
+### Next Actions
+- [x] Add new datasets into the canonical metadata flow.
+- [x] Revisit notebook-vs-pipeline alignment using the packaged benchmark.
+
+---
+
+## 2026-03-28
+
+### Session Goal
+Expand the canonical dataset to include the new `two_object` renders and retrain the angular model on the enlarged merged single-light SPOT pool.
+
+### Changes Made
+- Code/files changed:
+	- Appended `data/two_object_metadata.csv` into `data/data_master.csv`, adding 1,350 new rows under `dataset_source = two_object`.
+	- Updated `models/angular_predictor.ipynb` so image resolution includes `data/<image_relpath>` paths, allowing the notebook to pick up `two_object` images from the merged master table.
+	- Retrained `models/angular_predictor.keras` and refreshed `models/angular_predictor_preprocessing.json` using the expanded single-light SPOT pool from `data/data_master.csv`.
+- Data used/generated:
+	- Merged master metadata: `data/data_master.csv`.
+	- Added dataset directory: `data/two_object/`.
+	- Refreshed outputs:
+		- `models/angular_predictor.keras`
+		- `models/angular_predictor_preprocessing.json`
+- Model/config used:
+	- Angular retraining now uses the merged single-light SPOT pool visible from `data/data_master.csv`.
+
+### Results
+- Quantitative metrics:
+	- `angular_predictor.ipynb` now reports 8,127 usable single-light SPOT rows:
+		- `render-lighting`: 5,304
+		- `inverse_rendering_dataset`: 1,473
+		- `two_object`: 1,350
+- Qualitative observations:
+	- `two_object` is now part of the canonical master metadata instead of living outside the main workflow.
+	- The angular notebook can now train on the new dataset rather than silently skipping those images.
+
+### Interpretation
+This was the data-expansion stage. The key step was making `two_object` part of the same master table the angular notebook already understands, which made retraining straightforward.
+
+### Risks / Caveats
+- Notebook-level gains do not automatically imply pipeline-level gains if runtime conditioning still differs from notebook conditioning.
+
+### Next Actions
+- [x] Retrain color/power on the expanded merged data sources.
+- [x] Align runtime angular inference more closely with the retrained notebook setup.
+
+---
+
+## 2026-03-29
+
+### Session Goal
+Extend color/power training to use the merged `two_object` labels and reduce the mismatch between notebook angular evaluation and runtime angular inference.
+
+### Changes Made
+- Code/files changed:
+	- Updated `models/color_power_predictor.ipynb` to train from `data/data_master.csv` instead of `processing/color_power_labels.csv`, filtering to:
+		- all `spotlight-sphere-data` rows with valid spot labels
+		- all `two_object` rows with valid spot labels
+	- Reworked `pipeline.py` angular context construction to use the merged `data/data_master.csv` single-light SPOT subset instead of the earlier split between `inverse_rendering_dataset/metadata.csv` and `processing/master_with_paths.csv`.
+	- Added shared image-path resolution in `pipeline.py` so `two_object` rows can be resolved consistently in runtime code as well as notebooks.
+	- Changed angular inference row building so the pipeline prefers a matched metadata row when one exists, and only falls back to a synthetic mean/mode row when necessary.
+- Data used/generated:
+	- `data/data_master.csv` as the shared source of truth for retraining and runtime context.
+	- Refreshed output:
+		- `models/color_power_predictor.keras`
+- Model/config used:
+	- Color/power retraining used the combined labeled set from `spotlight-sphere-data` + `two_object`.
+	- Angular runtime context was rebuilt around the same merged single-light SPOT schema used by the notebook.
+
+### Results
+- Quantitative metrics:
+	- `color_power_predictor.ipynb` now resolves a 2,350-row labeled training pool:
+		- `spotlight-sphere-data`: 1,000
+		- `two_object`: 1,350
+- Qualitative observations:
+	- The angular notebook and runtime pipeline now draw from much closer metadata distributions than before.
+	- Color/power no longer ignores the new two-object data.
+
+### Interpretation
+This stage was mostly about alignment. Instead of retraining on one world and inferring in another, more of the workflow now points at the merged master metadata.
+
+### Risks / Caveats
+- Runtime inference can still diverge from notebook evaluation whenever the pipeline has to synthesize tabular context for unseen images.
+- End-to-end gains still depend on upstream count/type/color/spot predictions being stable.
+
+---
+
