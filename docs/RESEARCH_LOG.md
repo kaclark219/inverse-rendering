@@ -1,6 +1,6 @@
 # Research Log
 
-Use this file as a chronological lab notebook.
+Chronological lab notebook.
 
 ---
 
@@ -36,7 +36,7 @@ YYYY-MM-DD
 ## 2026-01-23
 
 ### Session Goal
-Conduct literature review to ground inverse lighting thesis direction.
+Conduct literature review to ground inverse lighting project direction.
 
 ### Changes Made
 - Code/files changed: None (reading + notes only).
@@ -61,7 +61,7 @@ Lighting representation should be low-dimensional, interpretable (direction, siz
 Inverse rendering is inherently under-constrained; learned priors may overfit to synthetic biases.
 
 ### Next Actions
-- [x] Define lighting parameterization for thesis (direction, intensity, color, etc.).
+- [x] Define lighting parameterization for project (direction, intensity, color, etc.).
 - [x] Select subset of dataset for initial baseline.
 
 ---
@@ -239,7 +239,7 @@ Refactor model to single spotlight.
 	- Prevented large-magnitude terms dominating loss.
 
 ### Interpretation
-Single-light formulation better matched stage-light thesis focus.
+Single-light formulation better matched stage-light project focus.
 
 ### Risks / Caveats
 May oversimplify future multi-light scenarios.
@@ -560,7 +560,7 @@ The pipeline architecture works conceptually but requires stricter standardizati
 Initialize thesis-style documentation framework for reproducible progress tracking.
 
 ### Changes Made
-- Created a dedicated `docs/` folder for thesis preparation.
+- Created a dedicated `docs/` folder for preparation.
 - Added overview, research-log, and struggles/decisions documents.
 
 ### Results
@@ -568,7 +568,7 @@ Initialize thesis-style documentation framework for reproducible progress tracki
 - Future sessions can now be logged in a consistent structure.
 
 ### Interpretation
-A standard note format should reduce memory-based reporting errors and simplify writing thesis chapters later.
+A standard note format should reduce memory-based reporting errors and simplify writing documentation later.
 
 ### Risks / Caveats
 Backfilling older experiments may be incomplete where metadata was not recorded.

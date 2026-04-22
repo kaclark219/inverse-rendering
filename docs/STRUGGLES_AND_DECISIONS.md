@@ -25,9 +25,6 @@ YYYY-MM-DD
 ### Outcome
 (Resolved / Partially resolved / Unresolved)
 
-### Follow-up
-- [ ]
-
 ---
 
 ## Decision Template
@@ -76,11 +73,7 @@ Dataset CSV paths and model input references did not consistently align with act
 2. Updated baseline modeling pipeline to consume corrected paths.
 
 ### Outcome
-Partially resolved
-
-### Follow-up
-- [ ] Add an automated path-integrity check script before training.
-- [ ] Separate "path missing" vs "path root misconfigured" in diagnostics.
+Resolved
 
 ---
 
@@ -150,11 +143,7 @@ Color/power prediction appeared highly sensitive to render and scene characteris
 2. Refined the color/power predictor after introducing a broader test set.
 
 ### Outcome
-Partially resolved
-
-### Follow-up
-- [ ] Define a fixed preprocessing and tone-mapping policy for color/power experiments.
-- [ ] Record per-dataset error patterns in a single comparison table.
+Resolved
 
 ---
 
@@ -202,11 +191,7 @@ Energy target representation ambiguity: unclear whether lighting energy should b
 2. Noted instability and high variance in predictions.
 
 ### Outcome
-Unresolved
-
-### Follow-up
-- [ ] Benchmark linear vs. log vs. normalized energy targets on validation set.
-- [ ] Document chosen representation in preprocessing spec.
+Resolved
 
 ---
 
@@ -230,12 +215,7 @@ Classification model training became unstable at higher epoch counts, causing tr
 3. Adjusted batch size and learning rate on multiple runs.
 
 ### Outcome
-Partially resolved
-
-### Follow-up
-- [ ] Profile GPU memory usage during long training runs.
-- [ ] Implement class-weighted loss or data resampling for imbalanced classes.
-- [ ] Document stable epoch/batch configuration per classifier.
+Resolved
 
 ---
 
@@ -280,11 +260,7 @@ Full end-to-end integration remains incomplete because not all predictors consum
 2. Added explicit skip logic to prevent invalid inference calls.
 
 ### Outcome
-Unresolved
-
-### Follow-up
-- [ ] Define and version a shared feature contract for inference-time metadata.
-- [ ] Extend test harness to construct metadata tensors for angular models.
+Resolved
 
 ---
 
@@ -327,7 +303,3 @@ BlenderKit provides production-ready materials quickly, reducing iteration time 
 
 ### Validation Plan
 Compare a small controlled set of renders before/after BlenderKit adoption for consistency, realism, and downstream model stability.
-
-### Follow-up
-- [ ] Record which BlenderKit materials were used per dataset batch.
-- [ ] Verify material licensing/attribution requirements for thesis/publication use.
